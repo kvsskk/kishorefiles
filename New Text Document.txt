@@ -1,0 +1,64 @@
+public void AddPageNumber(string str, string displaytext)
+        {
+            byte[] bytes = File.ReadAllBytes(str);
+            
+            iTextSharp.text.Font blackFont = FontFactory.GetFont("Arial", 6, iTextSharp.text.Font.NORMAL, BaseColor.BLACK);
+
+            using (var stream = new MemoryStream())
+            {
+                stream.Flush();
+                System.Windows.Forms.Application.DoEvents();
+                PdfReader reader = new PdfReader(bytes);
+                PdfReader.unethicalreading = true;
+                Paragraph p = new Paragraph();
+                Document doc = new Document();
+                using (PdfStamper stamper = new PdfStamper(reader, stream))
+                {
+                    System.Windows.Forms.Application.DoEvents();
+                    //PdfContentByte canvas = stamper.GetOverContent(1);
+                    //iTextSharp.text.Rectangle size = reader.GetPageSizeWithRotation(1);
+                    int pages = reader.NumberOfPages;
+                    for (int i = 1; i <= pages; i++)
+                    {
+                        iTextSharp.text.Rectangle mediabox = reader.GetPageSize(i);
+                        float x, y;
+                        x = mediabox.Right;
+                        y = mediabox.Bottom;
+                      
+                        iTextSharp.text.Rectangle cropBox = reader.GetCropBox(i);
+                        iTextSharp.text.Rectangle bottomRight = new iTextSharp.text.Rectangle(cropBox.GetRight(199), cropBox.Bottom, cropBox.Right, cropBox.GetBottom(18));
+                        
+                        EmptyTextBoxSimple(stamper, i, bottomRight, BaseColor.WHITE);
+                        ColumnText columnText = GenerateTextBox(stamper, i, bottomRight);
+                        columnText.AddText(new Phrase(displaytext.ToString(), blackFont));
+                        columnText.Go();
+                    }
+                }
+                  
+                    bytes = stream.ToArray();
+                //stream.Flush();
+            }
+            System.Threading.Thread.Sleep(200);
+            File.WriteAllBytes(str, bytes);
+        }
+
+
+
+void EmptyTextBoxSimple(PdfStamper stamper, int pageNumber, iTextSharp.text.Rectangle boxArea, BaseColor fillColor)
+        {
+            PdfContentByte canvas = stamper.GetOverContent(pageNumber);
+            canvas.SaveState();
+            canvas.SetColorFill(fillColor);
+            boxArea.BorderWidth = 2;
+            boxArea.BorderColor = new BaseColor(1, 2, 3);
+            canvas.Rectangle(boxArea.Left, boxArea.Bottom, boxArea.Width, boxArea.Height-10);
+            canvas.Fill();
+            canvas.RestoreState();
+        }
+        ColumnText GenerateTextBox(PdfStamper stamper, int pageNumber, iTextSharp.text.Rectangle boxArea)
+        {
+            PdfContentByte canvas = stamper.GetOverContent(pageNumber);
+            ColumnText columnText = new ColumnText(canvas);
+            columnText.SetSimpleColumn(boxArea);
+            return columnText;
+        }
